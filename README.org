@@ -1,0 +1,26 @@
+* emacs-maple-scratch
+Show recent files and projects in scratch buffer.
+
+** screenshots
+   [[https://github.com/honmaple/emacs-maple-scratch/blob/master/screenshot/example.png]]
+   [[https://github.com/honmaple/emacs-maple-scratch/blob/master/screenshot/example1.png]]
+   
+** usage
+   #+begin_src elisp
+     (use-package maple-scratch
+       :ensure nil
+       :hook (window-setup . maple-scratch-mode)
+       :config
+       (setq maple-scratch-alist
+             (append (butlast maple-scratch-alist)
+                     '(("Init"
+                        :action 'maple/open-init-file
+                        :desc "Open Init File")
+                       ("Test"
+                        :action 'maple/open-test-file
+                        :desc "Open Test File"))
+                     (last maple-scratch-alist))
+             maple-scratch-source t
+             maple-scratch-number 5))
+   #+end_src
+
