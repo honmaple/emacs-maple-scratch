@@ -3,6 +3,8 @@
 ;; Copyright (C) 2015-2019 lin.jiang
 
 ;; Author: lin.jiang <mail@honmaple.com>
+;; Version: 0.1.0
+;; Package-Requires: ((emacs "25.1"))
 ;; URL: https://github.com/honmaple/dotfiles/tree/master/emacs.d
 
 ;; This file is free software: you can redistribute it and/or modify
@@ -25,8 +27,8 @@
 
 ;;; Code:
 (defgroup maple-scratch nil
-  "Maple-scratch, Show recent files and projects in scratch buffer."
-  :group 'buffer)
+  "Show recent files and projects in scratch buffer."
+  :group 'maple-scratch)
 
 (defcustom maple-scratch-source nil
   "Whether insert source."
@@ -122,22 +124,20 @@
   (interactive)
   (move-beginning-of-line 1)
   (let ((btn (previous-button (point))))
-    (if btn (goto-char btn)
-      (progn
-        (goto-char (point-max))
-        (maple-scratch-previous-button)))))
+    (if btn (goto-char (button-start btn))
+      (goto-char (point-max))
+      (maple-scratch-previous-button))))
 
 (defun maple-scratch-next-button ()
   "Next button."
   (interactive)
   (let ((btn (next-button (point))))
-    (if btn (goto-char btn)
-      (progn
-        (goto-char (point-min))
-        (maple-scratch-next-button)))))
+    (if btn (goto-char (button-start btn))
+      (goto-char (point-min))
+      (maple-scratch-next-button))))
 
 (defun maple-scratch--init(label action desc)
-  "LABEL &KEY ACTION SOURCE SOURCE-ACTION REQUIRE DESC."
+  "Insert LABEL ACTION DESC."
   (insert "[")
   (maple-scratch--button label action nil label)
   (insert "]\t")
@@ -145,7 +145,7 @@
   (insert "\n"))
 
 (defun maple-scratch--init-with-source(label action source source-action require desc)
-  "LABEL &KEY ACTION SOURCE SOURCE-ACTION REQUIRE DESC."
+  "Insert LABEL &KEY ACTION SOURCE SOURCE-ACTION REQUIRE DESC."
   (insert "[")
   (maple-scratch--button label action nil label)
   (insert "]")
