@@ -73,6 +73,13 @@
   :group 'maple-scratch
   :type '(list))
 
+(defmacro maple-scratch-insert (&rest body)
+  "Insert BODY with []."
+  `(progn
+     (insert (maple-scratch--text "["))
+     ,@body
+     (insert (maple-scratch--text "]\t"))))
+
 (defmacro maple-scratch-dolist (spec &rest body)
   "Like dolist but get INDEX, SPEC &REST BODY."
   (declare (indent 1) (debug ((symbolp form &optional form) body)))
@@ -102,9 +109,8 @@
   "Button SOURCE ACTION &OPTIONAL -FACE."
   (insert "\n")
   (maple-scratch-dolist (index item source)
-    (insert "[")
-    (maple-scratch--button index `(lambda ()(interactive) `(,action ,item)))
-    (insert "]\t")
+    (maple-scratch-insert
+     (maple-scratch--button index `(lambda ()(interactive) `(,action ,item))))
     (maple-scratch--button item `(lambda ()(interactive) (,action ,item)) 'font-lock-comment-face)
     (insert "\n")))
 
@@ -138,17 +144,15 @@
 
 (defun maple-scratch--init(label action desc)
   "Insert LABEL ACTION DESC."
-  (insert "[")
-  (maple-scratch--button label action nil label)
-  (insert "]\t")
+  (maple-scratch-insert
+   (maple-scratch--button label action nil label))
   (maple-scratch--button (or desc label) action 'font-lock-comment-face)
   (insert "\n"))
 
 (defun maple-scratch--init-with-source(label action source source-action require desc)
   "Insert LABEL &KEY ACTION SOURCE SOURCE-ACTION REQUIRE DESC."
-  (insert "[")
-  (maple-scratch--button label action nil label)
-  (insert "]")
+  (maple-scratch-insert
+   (maple-scratch--button label action nil label))
   (when require (eval `,require))
   (if source (eval `(maple-scratch--item (maple-scratch--subseq ,source 0 maple-scratch-number) ,source-action))
     (insert "\t" (maple-scratch--text desc)))
