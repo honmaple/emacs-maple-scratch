@@ -73,6 +73,10 @@
   :group 'maple-scratch
   :type '(list))
 
+(defface maple-scratch-face '((t (:inherit font-lock-comment-face)))
+  "Text show face."
+  :group 'maple-scratch)
+
 (defmacro maple-scratch-insert (&rest body)
   "Insert BODY with []."
   `(progn
@@ -116,14 +120,7 @@
 
 (defun maple-scratch--text (text &optional face)
   "TEXT add FACE."
-  (propertize text 'font-lock-face (or face 'font-lock-comment-face)))
-
-(defun maple-scratch-startup ()
-  "Insert start message with FACE."
-  (maple-scratch--text
-   (format "\nEmacs startup finished in %.2fms with %s packages\n"
-           (* 1000.0 (float-time (time-subtract after-init-time before-init-time)))
-           (length load-path))))
+  (propertize text 'font-lock-face (or face 'maple-scratch-face)))
 
 (defun maple-scratch-previous-button ()
   "Previous button."
@@ -158,13 +155,42 @@
     (insert "\t" (maple-scratch--text desc)))
   (insert "\n"))
 
-(defun maple-scratch-init()
-  "Init maple-scratch."
+(defun maple-scratch-startup ()
+  "Insert start message with FACE."
+  (maple-scratch--text
+   (format "\nEmacs startup finished in %.2fms with %s packages\n"
+           (* 1000.0 (float-time (time-subtract after-init-time before-init-time)))
+           (length load-path))))
+
+(defun maple-scratch-fortune(&optional prefix)
+  "Insert fortune message with PREFIX."
+  (maple-scratch--text
+   (concat (when (executable-find "fortune")
+             (format (concat prefix "%s\n\n")
+                     (replace-regexp-in-string
+                      "\\[[0-9]*m" "" ; remove chinese shell char
+                      (replace-regexp-in-string
+                       "\n" (concat "\n" prefix) ; comment each line
+                       (replace-regexp-in-string
+                        "\s*$" ""    ; remove spaces
+                        (replace-regexp-in-string
+                         "\n$" ""    ; remove trailing linebreak
+                         (shell-command-to-string
+                          "fortune -a | fmt -80 -s | cowsay -$(shuf -n 1 -e b d g p s t w y) -f $(shuf -n 1 -e $(cowsay -l | tail -n +2)) -n")))))))
+           (concat prefix "Happy hacking, " user-login-name " - Emacs ♥ you!\n\n"))))
+
+(defun maple-scratch-default()
+  "Insert default message."
   (maple-scratch-dolist (index args maple-scratch-alist)
     (cl-destructuring-bind (label &key action source source-action require desc) args
       (if maple-scratch-source
           (maple-scratch--init-with-source label action source source-action require desc)
-        (maple-scratch--init index action desc))))
+        (maple-scratch--init index action desc)))))
+
+(defun maple-scratch-init()
+  "Init maple-scratch."
+  (insert (maple-scratch-fortune))
+  (maple-scratch-default)
   (insert (maple-scratch-startup)))
 
 (defvar maple-scratch-mode-map
