@@ -1,5 +1,5 @@
 * emacs-maple-scratch
-Show recent files and projects in scratch buffer.
+  Show recent files and projects in scratch buffer.
 
 ** screenshots
    [[https://github.com/honmaple/emacs-maple-scratch/blob/master/screenshot/example.png]]
@@ -7,6 +7,8 @@ Show recent files and projects in scratch buffer.
    
 ** usage
    #+begin_src elisp
+     (setq initial-scratch-message "")
+
      (use-package maple-scratch
        :ensure nil
        :hook (window-setup . maple-scratch-mode)

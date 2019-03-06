@@ -5,7 +5,7 @@
 ;; Author: lin.jiang <mail@honmaple.com>
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "25.1"))
-;; URL: https://github.com/honmaple/dotfiles/tree/master/emacs.d
+;; URL: https://github.com/honmaple/emacs-maple-scratch
 
 ;; This file is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -134,6 +134,7 @@
 (defun maple-scratch-next-button ()
   "Next button."
   (interactive)
+  (move-end-of-line 1)
   (let ((btn (next-button (point))))
     (if btn (goto-char (button-start btn))
       (goto-char (point-min))
