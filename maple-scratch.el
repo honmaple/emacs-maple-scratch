@@ -30,6 +30,11 @@
   "Show recent files and projects in scratch buffer."
   :group 'maple-scratch)
 
+(defcustom maple-scratch-buffer "*scratch*"
+  "Only insert scratch message in buffer."
+  :group 'maple-scratch
+  :type 'string)
+
 (defcustom maple-scratch-source nil
   "Whether insert source."
   :group 'maple-scratch
@@ -40,31 +45,26 @@
   :group 'maple-scratch
   :type 'number)
 
-(defcustom maple-scratch-buffer "*scratch*"
-  "Only insert scratch message in buffer."
-  :group 'maple-scratch
-  :type 'string)
-
 (defcustom maple-scratch-alist
   '(("Files"
      :action (cond ((bound-and-true-p ivy-mode) 'ivy-recentf)
                    ((bound-and-true-p helm-mode) 'helm-recentf)
                    (t recentf-open-files))
-     :source recentf-list
+     :source
+     (progn (unless recentf-mode (recentf-mode)) recentf-list)
      :source-action 'find-file-existing
-     :require (recentf-mode)
      :desc "Open Recenf Files")
     ("Projects"
      :action 'projectile-switch-project
-     :source projectile-known-projects
+     :source
+     (progn (unless projectile-mode (projectile-mode)) projectile-known-projects)
      :source-action 'projectile-switch-project-by-name
-     :require (projectile-mode)
      :desc "Open Project")
     ("Bookmarks"
      :action 'bookmark-jump
-     :source (bookmark-all-names)
+     :source
+     (progn (unless (featurep 'bookmark) (require 'bookmark)) (bookmark-all-names))
      :source-action 'bookmark-jump
-     :require (require 'bookmark)
      :desc "Jump to Bookmark")
     ("quit"
      :action 'save-buffers-kill-terminal
@@ -99,15 +99,18 @@
     (cl-subseq seq start (and (number-or-marker-p end)
                               (min len end)))))
 
-(defun maple-scratch--button (label action &optional -face -help)
-  "Button LABEL ACTION &OPTIONAL -FACE -HELP -FORMAT."
-  (insert-button
-   (format "%s" label)
-   'action
-   `(lambda (_) (call-interactively (or (command-remapping ,action) ,action)))
-   'follow-link t
-   'face (or -face 'font-lock-keyword-face)
-   'help-echo (or -help label)))
+(defun maple-scratch--text (text &optional face)
+  "TEXT add FACE."
+  (propertize text 'font-lock-face (or face 'maple-scratch-face)))
+
+(defun maple-scratch--button (label action &optional face help)
+  "Button LABEL ACTION &OPTIONAL FACE HELP."
+  (insert-button (format "%s" label)
+                 'action
+                 `(lambda (_) (call-interactively (or (command-remapping ,action) ,action)))
+                 'follow-link t
+                 'face (or face 'font-lock-keyword-face)
+                 'help-echo (or help label)))
 
 (defun maple-scratch--item (source action)
   "Button SOURCE ACTION &OPTIONAL -FACE."
@@ -118,40 +121,17 @@
     (maple-scratch--button item `(lambda ()(interactive) (,action ,item)) 'font-lock-comment-face)
     (insert "\n")))
 
-(defun maple-scratch--text (text &optional face)
-  "TEXT add FACE."
-  (propertize text 'font-lock-face (or face 'maple-scratch-face)))
-
-(defun maple-scratch-previous-button ()
-  "Previous button."
-  (interactive)
-  (move-beginning-of-line 1)
-  (let ((btn (previous-button (point))))
-    (if btn (goto-char (button-start btn))
-      (goto-char (point-max))
-      (maple-scratch-previous-button))))
-
-(defun maple-scratch-next-button ()
-  "Next button."
-  (interactive)
-  (move-end-of-line 1)
-  (let ((btn (next-button (point))))
-    (if btn (goto-char (button-start btn))
-      (goto-char (point-min))
-      (maple-scratch-next-button))))
-
-(defun maple-scratch--init(label action desc)
+(defun maple-scratch--init(label action &optional desc)
   "Insert LABEL ACTION DESC."
   (maple-scratch-insert
-   (maple-scratch--button label action nil label))
+   (maple-scratch--button label action))
   (maple-scratch--button (or desc label) action 'font-lock-comment-face)
   (insert "\n"))
 
-(defun maple-scratch--init-with-source(label action source source-action require desc)
-  "Insert LABEL &KEY ACTION SOURCE SOURCE-ACTION REQUIRE DESC."
+(defun maple-scratch--init-with-source(label action source source-action desc)
+  "Insert LABEL &KEY ACTION SOURCE SOURCE-ACTION DESC."
   (maple-scratch-insert
-   (maple-scratch--button label action nil label))
-  (when require (eval `,require))
+   (maple-scratch--button label action))
   (if source (eval `(maple-scratch--item (maple-scratch--subseq ,source 0 maple-scratch-number) ,source-action))
     (insert "\t" (maple-scratch--text desc)))
   (insert "\n"))
@@ -183,16 +163,35 @@
 (defun maple-scratch-default()
   "Insert default message."
   (maple-scratch-dolist (index args maple-scratch-alist)
-    (cl-destructuring-bind (label &key action source source-action require desc) args
+    (cl-destructuring-bind (label &key action source source-action desc) args
       (if maple-scratch-source
-          (maple-scratch--init-with-source label action source source-action require desc)
+          (maple-scratch--init-with-source label action source source-action desc)
         (maple-scratch--init index action desc)))))
 
 (defun maple-scratch-init()
   "Init maple-scratch."
-  (insert (maple-scratch-fortune))
-  (maple-scratch-default)
-  (insert (maple-scratch-startup)))
+  (with-current-buffer (get-buffer-create maple-scratch-buffer)
+    (insert (maple-scratch-fortune))
+    (maple-scratch-default)
+    (insert (maple-scratch-startup))))
+
+(defun maple-scratch-previous-button ()
+  "Previous button."
+  (interactive)
+  (move-beginning-of-line 1)
+  (let ((btn (previous-button (point))))
+    (if btn (goto-char (button-start btn))
+      (goto-char (point-max))
+      (maple-scratch-previous-button))))
+
+(defun maple-scratch-next-button ()
+  "Next button."
+  (interactive)
+  (move-end-of-line 1)
+  (let ((btn (next-button (point))))
+    (if btn (goto-char (button-start btn))
+      (goto-char (point-min))
+      (maple-scratch-next-button))))
 
 (defvar maple-scratch-mode-map
   (let ((map (make-sparse-keymap)))
@@ -206,9 +205,7 @@
   "maple-scratch-mode."
   :global nil
   :keymap maple-scratch-mode-map
-  (when (and maple-scratch-mode maple-scratch-buffer)
-    (with-current-buffer maple-scratch-buffer
-      (maple-scratch-init))))
+  (when maple-scratch-mode (maple-scratch-init)))
 
 (provide 'maple-scratch)
 ;;; maple-scratch.el ends here
