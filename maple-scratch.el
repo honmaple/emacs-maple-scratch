@@ -28,7 +28,7 @@
 ;;; Code:
 (defgroup maple-scratch nil
   "Show recent files and projects in scratch buffer."
-  :group 'maple-scratch)
+  :group 'maple)
 
 (defcustom maple-scratch-buffer "*scratch*"
   "Only insert scratch message in buffer."
@@ -49,6 +49,11 @@
   "The number of show list."
   :group 'maple-scratch
   :type 'number)
+
+(defcustom maple-scratch-write-mode 'emacs-lisp-mode
+  "The default mode when writable."
+  :group 'maple-scratch
+  :type 'function)
 
 (defcustom maple-scratch-alist
   '(("Files"
@@ -214,7 +219,8 @@
   (maple-scratch-with
     (read-only-mode -1)
     (when maple-scratch-empty (erase-buffer))
-    (assq-delete-all 'maple-scratch-mode minor-mode-map-alist)))
+    (assq-delete-all 'maple-scratch-mode minor-mode-map-alist)
+    (when maple-scratch-write-mode (funcall maple-scratch-write-mode))))
 
 (defvar maple-scratch-mode-map
   (let ((map (make-sparse-keymap)))
