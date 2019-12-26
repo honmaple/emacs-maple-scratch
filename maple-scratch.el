@@ -31,17 +31,17 @@
   :group 'maple)
 
 (defcustom maple-scratch-buffer "*scratch*"
-  "Only insert scratch message in buffer."
+  "Only insert message in *scratch*  buffer."
   :group 'maple-scratch
   :type 'string)
 
 (defcustom maple-scratch-source nil
-  "Whether insert source."
+  "Whether insert source list."
   :group 'maple-scratch
   :type 'boolean)
 
 (defcustom maple-scratch-center t
-  "Whether make scratch center."
+  "Whether make buffer message center."
   :group 'maple-scratch
   :type 'boolean)
 
@@ -70,19 +70,6 @@
   "The banner of show list."
   :group 'maple-scratch
   :type 'list)
-
-;; (defcustom maple-scratch-banner
-;;   '(" _______  _______  _______  _        _______"
-;;     "(       )(  ___  )(  ____ )( \\      (  ____ \\"
-;;     "| () () || (   ) || (    )|| (      | (    \\/"
-;;     "| || || || (___) || (____)|| |      | (__"
-;;     "| |(_)| ||  ___  ||  _____)| |      |  __)"
-;;     "| |   | || (   ) || (      | |      | ("
-;;     "| )   ( || )   ( || )      | (____/\\| (____/\\"
-;;     "|/     \\||/     \\||/       (_______/(_______/")
-;;   "The banner of show list."
-;;   :group 'maple-scratch
-;;   :type 'list)
 
 (defcustom maple-scratch-write-mode 'emacs-lisp-mode
   "The default mode when writable."
@@ -118,10 +105,7 @@
      :source
      (progn (unless (featurep 'bookmark) (require 'bookmark)) (bookmark-all-names))
      :source-action 'bookmark-jump
-     :desc "Jump to Bookmark")
-    ("Agenda"
-     :action 'org-agenda
-     :desc "Open org Agenda")
+     :desc "Open Bookmark")
     ("quit"
      :action 'save-buffers-kill-terminal
      :desc "Quit Emacs"))
@@ -133,15 +117,15 @@
   '(("HOME"
      :action (lambda() (find-file (expand-file-name "init.el" user-emacs-directory)))
      :desc "Browse home")
-    ("RESTORE"
-     :action 'restore-session
-     :desc "Restore Session")
+    ("CAPTURE"
+     :action 'org-capture
+     :desc "Open Org Capture")
     ("AGENDA"
      :action 'org-agenda
-     :desc "Open org Agenda")
+     :desc "Open Org Agenda")
     ("HELP"
      :action (lambda() (find-file (expand-file-name "README.org" user-emacs-directory)))
-     :desc "Quit Emacs"))
+     :desc "Emacs Help"))
   "Nav list of insert."
   :group 'maple-scratch
   :type '(list))
@@ -275,10 +259,7 @@
   "Init maple-scratch."
   (maple-scratch-with
     (insert (mapconcat
-             (lambda(x)
-               (if maple-scratch-center
-                   (maple-scratch--center (funcall x))
-                 (funcall x)))
+             (lambda(x) (if maple-scratch-center (maple-scratch--center (funcall x)) (funcall x)))
              maple-scratch-items "\n\n"))
     (read-only-mode 1)
     (when maple-scratch-center
@@ -306,23 +287,27 @@
      (lambda(s) (concat (make-string (ceiling (max 0 (- (window-width) max-len)) 2) ? ) s))
      (split-string content "\n") "\n")))
 
+(defun maple-scratch-forward-item ()
+  "Forward item."
+  (interactive)
+  (forward-button 1 t))
+
+(defun maple-scratch-backward-item ()
+  "Backward item."
+  (interactive)
+  (backward-button 1 t))
+
 (defun maple-scratch-previous-item ()
   "Previous item."
   (interactive)
   (move-beginning-of-line 1)
-  (let ((btn (previous-button (point))))
-    (if btn (goto-char (button-start btn))
-      (goto-char (point-max))
-      (maple-scratch-previous-item))))
+  (maple-scratch-backward-item))
 
 (defun maple-scratch-next-item ()
   "Next item."
   (interactive)
   (move-end-of-line 1)
-  (let ((btn (next-button (point))))
-    (if btn (goto-char (button-start btn))
-      (goto-char (point-min))
-      (maple-scratch-next-item))))
+  (maple-scratch-forward-item))
 
 (defun maple-scratch-writable ()
   "Writable."
@@ -334,11 +319,10 @@
 
 (defvar maple-scratch-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-n") #'maple-scratch-next-item)
-    (define-key map (kbd "C-p") #'maple-scratch-previous-item)
-    (define-key map (kbd "C-q") #'save-buffers-kill-terminal)
-    (define-key map (kbd "n") #'maple-scratch-next-item)
-    (define-key map (kbd "p") #'maple-scratch-previous-item)
+    (define-key map (kbd "j") #'maple-scratch-next-item)
+    (define-key map (kbd "k") #'maple-scratch-previous-item)
+    (define-key map (kbd "h") #'maple-scratch-backward-item)
+    (define-key map (kbd "l") #'maple-scratch-forward-item)
     (define-key map (kbd "e") #'maple-scratch-writable)
     (define-key map (kbd "q") #'save-buffers-kill-terminal)
     map) "Keymap of command `maple-scratch-mode'.")

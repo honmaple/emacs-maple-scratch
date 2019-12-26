@@ -13,7 +13,16 @@
        :ensure nil
        :hook (window-setup . maple-scratch-mode)
        :config
-       (setq maple-scratch-alist
+       (setq maple-scratch-source nil
+             maple-scratch-number 5
+             maple-scratch-center t
+             maple-scratch-empty t
+             maple-scratch-write-mode 'emacs-lisp-mode
+             maple-scratch-items '(maple-scratch-banner
+                                   maple-scratch-navbar
+                                   maple-scratch-default
+                                   maple-scratch-startup)
+             maple-scratch-alist
              (append (butlast maple-scratch-alist)
                      '(("Init"
                         :action 'maple/open-init-file
@@ -21,8 +30,30 @@
                        ("Test"
                         :action 'maple/open-test-file
                         :desc "Open Test File"))
-                     (last maple-scratch-alist))
-             maple-scratch-source t
-             maple-scratch-number 5))
+                     (last maple-scratch-alist)))
+
+       (setq maple-scratch-banner
+             '(" _______  _______  _______  _        _______"
+               "(       )(  ___  )(  ____ )( \\      (  ____ \\"
+               "| () () || (   ) || (    )|| (      | (    \\/"
+               "| || || || (___) || (____)|| |      | (__"
+               "| |(_)| ||  ___  ||  _____)| |      |  __)"
+               "| |   | || (   ) || (      | |      | ("
+               "| )   ( || )   ( || )      | (____/\\| (____/\\"
+               "|/     \\||/     \\||/       (_______/(_______/"))
+
+       (setq maple-scratch-navbar-alist
+             '(("HOME"
+                :action (lambda() (find-file (expand-file-name "init.el" user-emacs-directory)))
+                :desc "Browse home")
+               ("CAPTURE"
+                :action 'org-capture
+                :desc "Open Org Capture")
+               ("AGENDA"
+                :action 'org-agenda
+                :desc "Open Org Agenda")
+               ("HELP"
+                :action (lambda() (find-file (expand-file-name "README.org" user-emacs-directory)))
+                :desc "Emacs Help"))))
    #+end_src
 
