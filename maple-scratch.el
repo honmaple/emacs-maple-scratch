@@ -50,6 +50,11 @@
   :group 'maple-scratch
   :type 'boolean)
 
+(defcustom maple-scratch-anywhere t
+  "Whether enable maple-scratch-mode when *scratch* is not first buffer."
+  :group 'maple-scratch
+  :type 'boolean)
+
 (defcustom maple-scratch-number 10
   "The number of show list."
   :group 'maple-scratch
@@ -255,16 +260,6 @@
         (maple-scratch--text "]"))))
    maple-scratch-navbar-alist " "))
 
-(defun maple-scratch-init()
-  "Init maple-scratch."
-  (maple-scratch-with
-    (insert (mapconcat
-             (lambda(x) (if maple-scratch-center (maple-scratch--center (funcall x)) (funcall x)))
-             maple-scratch-items "\n\n"))
-    (read-only-mode 1)
-    (when maple-scratch-center
-      (add-hook 'window-size-change-functions #'maple-scratch--resize nil t))))
-
 (defun maple-scratch--resize(&rest _)
   "Resize buffer content, Make it center."
   (interactive)
@@ -313,7 +308,7 @@
   "Writable."
   (interactive)
   (maple-scratch-with
-    (maple-scratch-mode -1)
+    (read-only-mode -1)
     (when maple-scratch-empty (erase-buffer))
     (when maple-scratch-write-mode (funcall maple-scratch-write-mode))))
 
@@ -321,19 +316,32 @@
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "j") #'maple-scratch-next-item)
     (define-key map (kbd "k") #'maple-scratch-previous-item)
+    (define-key map (kbd "n") #'maple-scratch-next-item)
+    (define-key map (kbd "p") #'maple-scratch-previous-item)
     (define-key map (kbd "h") #'maple-scratch-backward-item)
     (define-key map (kbd "l") #'maple-scratch-forward-item)
     (define-key map (kbd "e") #'maple-scratch-writable)
     (define-key map (kbd "q") #'save-buffers-kill-terminal)
-    map) "Keymap of command `maple-scratch-mode'.")
+    map) "Keymap of `maple-scratch-mode'.")
+
+(define-derived-mode maple-scratch-mode fundamental-mode "Scratch"
+  "Major mode for the scratch buffer.
+\\<maple-scratch-mode-map>"
+  :syntax-table nil
+  :abbrev-table nil
+  (when (zerop (buffer-size))
+    (insert (mapconcat
+             (lambda(x) (if maple-scratch-center (maple-scratch--center (funcall x)) (funcall x)))
+             maple-scratch-items "\n\n"))
+    (when maple-scratch-center
+      (add-hook 'window-size-change-functions #'maple-scratch--resize nil t)))
+  (read-only-mode 1))
 
 ;;;###autoload
-(define-minor-mode maple-scratch-mode
-  "maple-scratch-mode."
-  :keymap maple-scratch-mode-map
-  (if maple-scratch-mode (maple-scratch-init)
-    (read-only-mode -1)
-    (remove-hook 'window-size-change-functions #'maple-scratch--resize)))
+(defun maple-scratch-init()
+  "Enable scratch mode in scratch buffer."
+  (when (or maple-scratch-anywhere (equal (buffer-name) maple-scratch-buffer))
+    (maple-scratch-with (maple-scratch-mode))))
 
 (provide 'maple-scratch)
 ;;; maple-scratch.el ends here

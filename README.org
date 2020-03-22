@@ -11,12 +11,13 @@
 
      (use-package maple-scratch
        :ensure nil
-       :hook (window-setup . maple-scratch-mode)
+       :hook (window-setup . maple-scratch-init)
        :config
        (setq maple-scratch-source nil
              maple-scratch-number 5
              maple-scratch-center t
              maple-scratch-empty t
+             maple-scratch-anywhere nil
              maple-scratch-write-mode 'emacs-lisp-mode
              maple-scratch-items '(maple-scratch-banner
                                    maple-scratch-navbar
