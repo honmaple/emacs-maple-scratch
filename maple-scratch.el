@@ -176,16 +176,19 @@
          (funcall (or (command-remapping ,action) ,action))))
     map))
 
-(defun maple-scratch--button (label keymap &optional face help)
-  "LABEL ACTION &OPTIONAL KEYMAP FACE HELP."
-  (propertize
-   (format "%s" label)
-   'face (or face 'font-lock-keyword-face)
-   'mouse-face 'highlight
-   ;; use button propertize to use next-button and previous-button
-   'help-echo help
-   'button (cons (list t) keymap)
-   'keymap keymap))
+(defun maple-scratch--button (label keymap &optional face help no-button)
+  "LABEL ACTION &OPTIONAL KEYMAP FACE HELP NO-BUTTON."
+  (apply 'propertize
+         (append
+          (list (format "%s" label)
+                'face (or face 'font-lock-keyword-face)
+                'mouse-face 'highlight
+                'keymap keymap)
+          (when help (list 'help-echo help))
+          ;; use button propertize to use next-button and previous-button
+          (unless no-button
+            (list 'category 'default-button
+                  'button (cons (list t) keymap))))))
 
 (defun maple-scratch-item(label action &optional source source-action desc)
   "LABEL ACTION &OPTIONAL SOURCE SOURCE-ACTION DESC."
@@ -197,10 +200,10 @@
      (if source
          (format "\n%s\n"
                  (maple-scratch-concat
-                   (maple-scratch--subseq (eval `,source) 0 maple-scratch-number)
+                   (maple-scratch--subseq (eval source) 0 maple-scratch-number)
                    (maple-scratch-item
                     index `(lambda() (funcall ,source-action ,item)) nil nil item)))
-       (format "\t%s" (maple-scratch--button (or desc label) keymap 'font-lock-comment-face))))))
+       (format "\t%s" (maple-scratch--button (or desc label) keymap 'font-lock-comment-face nil t))))))
 
 (defun maple-scratch-default()
   "Insert default message in scratch buffer."
@@ -262,7 +265,6 @@
 
 (defun maple-scratch--resize(&rest _)
   "Resize buffer content, Make it center."
-  (interactive)
   (maple-scratch-with
     (let ((inhibit-read-only t)
           (content (buffer-string)))
@@ -282,27 +284,15 @@
      (lambda(s) (concat (make-string (ceiling (max 0 (- (window-width) max-len)) 2) ? ) s))
      (split-string content "\n") "\n")))
 
-(defun maple-scratch-forward-item ()
-  "Forward item."
-  (interactive)
-  (forward-button 1 t))
-
-(defun maple-scratch-backward-item ()
-  "Backward item."
-  (interactive)
-  (backward-button 1 t))
-
 (defun maple-scratch-previous-item ()
   "Previous item."
   (interactive)
-  (move-beginning-of-line 1)
-  (maple-scratch-backward-item))
+  (backward-button 1 t))
 
 (defun maple-scratch-next-item ()
   "Next item."
   (interactive)
-  (move-end-of-line 1)
-  (maple-scratch-forward-item))
+  (forward-button 1 t))
 
 (defun maple-scratch-writable ()
   "Writable."
@@ -318,8 +308,6 @@
     (define-key map (kbd "k") #'maple-scratch-previous-item)
     (define-key map (kbd "n") #'maple-scratch-next-item)
     (define-key map (kbd "p") #'maple-scratch-previous-item)
-    (define-key map (kbd "h") #'maple-scratch-backward-item)
-    (define-key map (kbd "l") #'maple-scratch-forward-item)
     (define-key map (kbd "e") #'maple-scratch-writable)
     (define-key map (kbd "q") #'save-buffers-kill-terminal)
     map) "Keymap of `maple-scratch-mode'.")
