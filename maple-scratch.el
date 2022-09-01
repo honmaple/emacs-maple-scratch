@@ -1,6 +1,6 @@
 ;;; maple-scratch.el ---  scratch message configuration.	-*- lexical-binding: t -*-
 
-;; Copyright (C) 2015-2019 lin.jiang
+;; Copyright (C) 2015-2022 lin.jiang
 
 ;; Author: lin.jiang <mail@honmaple.com>
 ;; Version: 0.1.0
@@ -47,6 +47,11 @@
 
 (defcustom maple-scratch-empty t
   "Whether empty buffer when make it writable."
+  :group 'maple-scratch
+  :type 'boolean)
+
+(defcustom maple-scratch-keybind t
+  "Whether show keybind."
   :group 'maple-scratch
   :type 'boolean)
 
@@ -139,6 +144,10 @@
   "Text show face."
   :group 'maple-scratch)
 
+(defface maple-scratch-key-face '((t (:inherit font-lock-comment-face)))
+  "Key desc show face."
+  :group 'maple-scratch)
+
 (defmacro maple-scratch-with (&rest body)
   "Execute the forms in BODY with window."
   (declare (indent 0) (debug t))
@@ -161,7 +170,17 @@
 
 (defun maple-scratch--keybind (action)
   "Lookup ACTION keys dynamically."
-  (mapcar 'key-description (where-is-internal action overriding-local-map)))
+  (or (when-let (key (where-is-internal action nil t))
+        (with-temp-buffer
+          (save-excursion (insert (key-description key)))
+          (while (re-search-forward "<\\([^>]+\\)>" nil t)
+            (let ((str (match-string 1)))
+              (replace-match
+               (upcase (if (< (length str) 3)
+                           str
+                         (substring str 0 3))))))
+          (propertize (buffer-string) 'face 'maple-scratch-key-face)))
+      ""))
 
 (defun maple-scratch--keymap (action)
   "Make keymap with ACTION."
@@ -203,7 +222,11 @@
                    (maple-scratch--subseq (eval source) 0 maple-scratch-number)
                    (maple-scratch-item
                     index `(lambda() (funcall ,source-action ,item)) nil nil item)))
-       (format "\t%s" (maple-scratch--button (or desc label) keymap 'font-lock-comment-face nil t))))))
+       (format "\t%-18s%s"
+               (maple-scratch--button (or desc label) keymap 'font-lock-comment-face nil t)
+               (if maple-scratch-keybind
+                   (format "\t%s" (eval `(maple-scratch--keybind ,action)))
+                 ""))))))
 
 (defun maple-scratch-default()
   "Insert default message in scratch buffer."
@@ -310,7 +333,8 @@
     (define-key map (kbd "p") #'maple-scratch-previous-item)
     (define-key map (kbd "e") #'maple-scratch-writable)
     (define-key map (kbd "q") #'save-buffers-kill-terminal)
-    map) "Keymap of `maple-scratch-mode'.")
+    map)
+  "Keymap of `maple-scratch-mode'.")
 
 (define-derived-mode maple-scratch-mode fundamental-mode "Scratch"
   "Major mode for the scratch buffer.
